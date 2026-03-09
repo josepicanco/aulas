@@ -3,60 +3,67 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-# 1. Caminho do arquivo
-arquivo = 'titanic_dataset.csv'
+# pegando o arquivo que tá na pasta
+arquivo_csv = 'titanic_dataset.csv'
 
-if not os.path.exists(arquivo):
-    print(f"ERRO: O arquivo '{arquivo}' não foi encontrado na pasta!")
-else:
-    # Carregando o dataset
-    dados = pd.read_csv(arquivo)
+# conferir se o arquivo existe antes de dar erro
+if os.path.exists(arquivo_csv):
+    # lendo a tabela do titanic
+    tabela = pd.read_csv(arquivo_csv)
 
-    # 2. Limpeza e Tratamento
-    dados['Age'] = dados['Age'].fillna(dados['Age'].median())
-    dados.drop(columns=['Cabin'], inplace=True, errors='ignore')
-    dados.dropna(subset=['Embarked'], inplace=True)
+    # LIMPEZA DOS DADOS
+    # preenchendo as idades vazias com a mediana
+    valor_do_meio = tabela['Age'].median()
+    tabela['Age'] = tabela['Age'].fillna(valor_do_meio)
 
-    # 3. Análise de Família (SibSp e Parch)
-    # Criando lógica de quem viaja sozinho ou acompanhado
-    dados['Parentes'] = dados['SibSp'] + dados['Parch']
-    dados['Status_Viagem'] = dados['Parentes'].apply(lambda x: 'Sozinho' if x == 0 else 'Com Família')
+    # tirando a coluna da cabine que tem muito erro
+    tabela = tabela.drop(columns=['Cabin'])
 
-    # 4. Gráfico 1: Sobrevivência por Classe e Sexo
-    plt.figure(figsize=(15, 6))
+    # tirando linhas que não tem o porto de embarque
+    tabela.dropna(subset=['Embarked'], inplace=True)
+
+    # TRABALHANDO COM A FAMÍLIA (SibSp e Parch)
+    # vou somar os parentes pra ver quem tava sozinho
+    tabela['Soma_Parentes'] = tabela['SibSp'] + tabela['Parch']
+    
+    # lógica simples pra ver se está sozinho ou não
+    tabela.loc[tabela['Soma_Parentes'] == 0, 'Como_Viajava'] = 'Sozinho'
+    tabela.loc[tabela['Soma_Parentes'] > 0, 'Como_Viajava'] = 'Com Familia'
+
+    # PARTE DOS GRÁFICOS
+    # Gráfico 1 - Sobrevivência por Classe e Sexo
+    plt.figure(figsize=(12, 5))
     plt.subplot(1, 2, 1)
     
-    # Cores: Vermelho para mulheres, Azul para homens
-    cores_br = {"female": "#d62728", "male": "#1f77b4"} 
+    # cores que o professor pediu: vermelho mulher e azul homem
+    cores_lista = {"female": "red", "male": "blue"}
     
-    # ci=None remove as setas/linhas pretas de erro
-    sns.barplot(data=dados, x='Pclass', y='Survived', hue='Sex', 
-                palette=cores_br, errorbar=None)
+    sns.barplot(data=tabela, x='Pclass', y='Survived', hue='Sex', palette=cores_lista, errorbar=None)
     
-    plt.title('Taxa de Sobrevivência por Classe e Sexo')
-    plt.xlabel('Classe (1ª, 2ª e 3ª)')
-    plt.ylabel('Percentual de Sobrevivência')
-    plt.legend(title='Legenda de Cores', labels=['Masculino (Azul)', 'Feminino (Vermelho)'])
+    plt.title('Sobrevivencia por Classe e Sexo')
+    plt.xlabel('Classe')
+    plt.ylabel('Taxa de Sobreviventes')
+    plt.legend(title='Legenda', labels=['Homem (Azul)', 'Mulher (Vermelho)'])
 
-    # 5. Gráfico 2: Porto de Embarque (Nomes Reais)
+    # Gráfico 2 - Porto de Embarque
     plt.subplot(1, 2, 2)
-    mapeamento_portos = {'C': 'Cherbourg', 'Q': 'Queenstown', 'S': 'Southampton'}
-    dados['Porto_Nome'] = dados['Embarked'].map(mapeamento_portos)
-
-    sns.countplot(data=dados, x='Porto_Nome', hue='Survived', palette='viridis')
-    plt.title('Sobrevivência por Porto de Embarque')
-    plt.xlabel('Porto')
-    plt.ylabel('Quantidade')
-    plt.legend(title='Sobreviveu', labels=['Não', 'Sim'])
+    
+    # traduzindo os portos pra ficar mais fácil de ler
+    tabela['Porto'] = tabela['Embarked'].replace({'C': 'Cherbourg', 'Q': 'Queenstown', 'S': 'Southampton'})
+    
+    sns.countplot(data=tabela, x='Porto', hue='Survived', palette='magma')
+    plt.title('Sobreviventes por Porto')
+    plt.legend(title='Sobreviveu', labels=['Nao', 'Sim'])
 
     plt.tight_layout()
     plt.show()
 
-    # 6. Gráfico 3: Análise de Parentes (Sozinho vs Família)
-    plt.figure(figsize=(8, 5))
-    sns.barplot(data=dados, x='Status_Viagem', y='Survived', palette='Set2', errorbar=None)
-    plt.title('Influência de Parentes na Sobrevivência')
-    plt.ylabel('Taxa de Sobrevivência')
+    # Gráfico 3 - Família
+    plt.figure(figsize=(7, 4))
+    sns.barplot(data=tabela, x='Como_Viajava', y='Survived', errorbar=None)
+    plt.title('Quem sobreviveu mais: Sozinho ou com Familia?')
     plt.show()
 
-    print("\nExecução Finalizada com Sucesso.")
+    print("Terminei de rodar tudo!")
+else:
+    print("O arquivo nao foi encontrado, coloque ele na mesma pasta do script")
