@@ -28,6 +28,22 @@ if os.path.exists(arquivo_csv):
     plt.ylabel('Quantidade de buracos nos dados')
     plt.show()
 
+    # Verificar duplicados
+    duplicados = tabela.duplicated().sum()
+    print(f"Valores duplicados encontrados: {duplicados}")
+    tabela = tabela.drop_duplicates()
+
+    # ajustes de tipagem convertendo Pclass para categoria para otimizar a memória
+    tabela['Pclass'] = tabela['Pclass'].astype('category')
+
+        # Agrupando para ver a média de sobrevivência por classe social
+    agrupado_sobrevivencia = tabela.groupby('Pclass', observed=True)['Survived'].mean()
+    print("\n--- Resultado do GroupBy (Media de Sobrevivencia) ---")
+    print(agrupado_sobrevivencia)
+    
+    # Ordenando a tabela por idade para facilitar conferência
+    tabela = tabela.sort_values(by='Age', ascending=True)
+
     # preenchendo as idades vazias com a mediana (assim evita dados nulos)
     valor_do_meio = tabela['Age'].median()
     tabela['Age'] = tabela['Age'].fillna(valor_do_meio)
@@ -78,6 +94,16 @@ if os.path.exists(arquivo_csv):
     plt.figure(figsize=(7, 4))
     sns.barplot(data=tabela, x='Como_Viajava', y='Survived', errorbar=None)
     plt.title('Quem sobreviveu mais: Sozinho ou com Familia?')
+    plt.show()
+
+    # Gráfico 2: Gráfico média sobrevivência x classe 
+    plt.subplot(1, 2, 2)
+    agrupado_sobrevivencia.plot(kind='line', marker='o', color='green', linewidth=2)
+    plt.title('Tendencia de Sobrevivencia')
+    plt.xlabel('Classe do Passageiro')
+    plt.ylabel('Media de Sobrevivencia')
+    plt.grid(True, linestyle='--', alpha=0.7)
+
     plt.show()
 
     print("Terminei de rodar tudo!")
